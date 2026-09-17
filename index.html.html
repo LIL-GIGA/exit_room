@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>eXit</title>
+<style>
+  :root{
+    --bg:#040604;
+    --fg:#3cf25a;
+    --dim:#1c7a2c;
+    --amber:#e0c341;
+    --red:#e0413c;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    height:100vh;
+    height:100dvh;
+    width:100vw;
+    background:var(--bg);
+    font-family:"Courier New",Courier,monospace;
+    overflow:hidden;
+  }
+  #crt{
+    position:relative;
+    height:100vh;
+    height:100dvh;
+    width:100vw;
+    padding:28px 34px;
+    display:flex;
+    flex-direction:column;
+  }
+  #crt::before{
+    content:"";
+    position:absolute;inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.25) 2px,
+      rgba(0,0,0,0.25) 3px
+    );
+    pointer-events:none;
+    z-index:3;
+  }
+  #crt::after{
+    content:"";
+    position:absolute;inset:0;
+    box-shadow:inset 0 0 120px rgba(0,0,0,0.85), inset 0 0 40px rgba(0,0,0,0.6);
+    pointer-events:none;
+    z-index:4;
+  }
+  #screen{
+    flex:1;
+    overflow-y:auto;
+    color:var(--fg);
+    text-shadow:0 0 4px rgba(60,242,90,0.55), 0 0 1px rgba(60,242,90,0.9);
+    font-size:15px;
+    line-height:1.55;
+    letter-spacing:0.3px;
+    scrollbar-width:none;
+  }
+  #screen::-webkit-scrollbar{display:none;}
+  .line{white-space:pre-wrap;margin:0;}
+  .dim{color:var(--dim);}
+  .amber{color:var(--amber);text-shadow:0 0 4px rgba(224,195,65,0.5);}
+  .red{color:var(--red);text-shadow:0 0 6px rgba(224,65,60,0.6);}
+  .cmd{color:#bdf7c4;}
+  #inputRow{
+    display:flex;
+    align-items:center;
+    padding-top:10px;
+    color:var(--fg);
+    text-shadow:0 0 4px rgba(60,242,90,0.55);
+    font-size:15px;
+  }
+  #prompt{margin-right:8px;}
+  #cmdInput{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:inherit;
+    font:inherit;
+    font-size:16px;
+    text-shadow:inherit;
+    caret-color:var(--fg);
+    -webkit-appearance:none;
+  }
+  @media (max-width: 600px){
+    #crt{padding:16px 16px;}
+    #screen{font-size:13px;line-height:1.5;}
+    #inputRow{font-size:16px;}
+    #boot{font-size:12px;padding:0 20px;text-align:center;}
+  }
+  #cursor{
+    display:inline-block;
+    width:9px;height:16px;
+    background:var(--fg);
+    margin-left:2px;
+    animation:blink 1s steps(1) infinite;
+    vertical-align:middle;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  #boot{
+    position:absolute;inset:0;
+    background:#000;
+    color:var(--fg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+    z-index:5;
+    text-shadow:0 0 4px rgba(60,242,90,0.5);
+  }
+</style>
+</head>
+<body>
+<div id="crt">
+  <div id="boot">INITIALIZING&nbsp;<span id="bootDots"></span></div>
+  <div id="screen"></div>
+  <div id="inputRow" style="visibility:hidden;">
+    <span id="prompt">&gt;</span>
+    <input id="cmdInput" autocomplete="off" spellcheck="false" />
+  </div>
+</div>
+
+<script>
+const screen = document.getElementById('screen');
+const input = document.getElementById('cmdInput');
+const boot = document.getElementById('boot');
+const inputRow = document.getElementById('inputRow');
+const bootDots = document.getElementById('bootDots');
+
+let state = {
+  hasKeycard: false,
+  hasNote: false,
+  drawerOpen: false,
+  stage: 0,
+  unlocked: false,
+  ending: false
+};
+
+const puzzles = [
+  {
+    file: 'SECURITY_LOG_01.TXT',
+    text:
+`SECURITY_LOG_01.TXT
+
+Four connections attempted access: A, B, C, D.
+
+  - The intrusion came from outside the building.
+  - B and D both connected from inside.
+  - A connected from outside, but A's session lasted
+    less than 10 seconds.
+  - The intrusion's session lasted over a minute.
+
+Only one connection fits every line above.
+Type ENTER followed by its letter.`,
+    hint: `B and D are already out — they connected from inside. That leaves two candidates. One of them had a session too short to be the intrusion. Who's left?`,
+    answer: 'c'
+  },
+  {
+    file: 'SECURITY_LOG_02.TXT',
+    text:
+`SECURITY_LOG_02.TXT
+
+Five processes logged connection counts:
+
+  E: 5      F: 3      G: 1      H: 4      I: 2
+
+The rogue process opened more connections than F,
+and fewer connections than E.
+
+Only one process fits both conditions.
+Type ENTER followed by its letter.`,
+    hint: `You need a number strictly between F's count (3) and E's count (5). Only one process has that exact count.`,
+    answer: 'h'
+  },
+  {
+    file: 'SECURITY_LOG_03.TXT',
+    text:
+`SECURITY_LOG_03.TXT
+
+Six terminals reported activity: J, K, L, M, N, O.
+
+  Floor    —  J:2  K:3  L:1  M:3  N:2  O:1
+  The intrusion came from a terminal on the third floor.
+
+  Session start — K: 01:40      M: 02:15
+  The intrusion's session started after 02:00.
+
+Only one terminal fits both conditions.
+Type ENTER followed by its letter.`,
+    hint: `First narrow it to just the third-floor terminals — there are only two. Then check which of those two actually started after 02:00.`,
+    answer: 'm'
+  }
+];
+
+function print(text, cls){
+  const div = document.createElement('div');
+  div.className = 'line' + (cls ? ' ' + cls : '');
+  div.textContent = text;
+  screen.appendChild(div);
+  screen.scrollTop = screen.scrollHeight;
+}
+
+function printLines(lines, cls){
+  lines.split('\n').forEach(l => print(l, cls));
+}
+
+async function typeLines(lines, cls, delay=14){
+  const arr = lines.split('\n');
+  for(const l of arr){
+    const div = document.createElement('div');
+    div.className = 'line' + (cls ? ' ' + cls : '');
+    screen.appendChild(div);
+    for(let i=0;i<l.length;i++){
+      div.textContent += l[i];
+      screen.scrollTop = screen.scrollHeight;
+      await new Promise(r=>setTimeout(r, delay));
+    }
+    await new Promise(r=>setTimeout(r, 40));
+  }
+}
+
+let spinFrames = ['|','/','-','\\'];
+let spinIdx = 0;
+const bootTimer = setInterval(()=>{
+  spinIdx = (spinIdx+1)%spinFrames.length;
+  bootDots.textContent = spinFrames[spinIdx];
+}, 100);
+
+setTimeout(async ()=>{
+  clearInterval(bootTimer);
+  boot.style.display = 'none';
+  inputRow.style.visibility = 'visible';
+  await typeLines(
+`SYSTEM: WHITEROSE_PROTOCOL
+LOADING ROOM.EXE...
+
+[ this is optional. no obligation, no score kept.
+  play it alone, or drag a friend in with you. ]
+
+You are sitting at a terminal in a windowless room.
+The air smells like ozone and old carpet. There is a
+steel door behind you, sealed. Somewhere below the floor,
+something is counting down.
+
+A drawer is set into the desk. A folded NOTE sits on top
+of the terminal, unread. The terminal itself is holding
+three SECURITY LOGS from the moment of breach — the door
+won't move until all three locks are released.
+
+Type HELP if you don't know what to do.
+Type HINT any time if a lock has you stuck.`, null, 10);
+  input.focus();
+}, 1400);
+
+function help(){
+  printLines(
+`Commands: LOOK, OPEN DRAWER, READ NOTE, TAKE KEYCARD,
+READ LOG, ENTER <letter>, HINT, INVENTORY, GO DOOR, HELP`, 'dim');
+}
+
+function readLog(){
+  if(state.unlocked){
+    print("All three locks are already released. Nothing left to read here.", 'dim');
+    return;
+  }
+  printLines(puzzles[state.stage].text, 'amber');
+}
+
+function giveHint(){
+  if(state.unlocked){
+    print("All locks are already released — no hints left to give.", 'dim');
+    return;
+  }
+  printLines('HINT: ' + puzzles[state.stage].hint, 'dim');
+}
+
+function enterAnswer(letter){
+  if(state.unlocked){
+    print("The lock is already released.", 'dim');
+    return;
+  }
+  const correct = puzzles[state.stage].answer;
+  if(letter === correct){
+    state.stage++;
+    if(state.stage >= puzzles.length){
+      state.unlocked = true;
+      printLines(
+`Lock ${puzzles.length} of ${puzzles.length} released.
+
+Something deep in the wall gives way — a single, heavy
+click. The steel door is no longer sealed.
+
+You can GO DOOR now.`, 'amber');
+    } else {
+      printLines(
+`Lock ${state.stage} of ${puzzles.length} released.
+Type READ LOG to see the next one.`, 'amber');
+    }
+  } else {
+    printLines(
+`Nothing happens. That's not it.
+Type READ LOG to read the current one again.`, 'dim');
+  }
+}
+
+function look(){
+  printLines(
+`A terminal. A desk. A drawer, ${state.drawerOpen ? 'open' : 'closed'}.
+A folded note. A steel door, sealed, behind you.`);
+}
+
+function openDrawer(){
+  if(state.drawerOpen){
+    print("The drawer is already open.", 'dim');
+    return;
+  }
+  state.drawerOpen = true;
+  printLines(
+`You slide the drawer open. Inside, a single keycard,
+face down. Nothing else.`);
+}
+
+function readNote(){
+  if(state.hasNote){
+    printLines(
+`"You've been very good at this. Solving. Finding.
+Getting to the next room.
+
+That was never the hard part.
+
+There's no puzzle in the door. There's a person on
+the other side of it, and they're the only one who
+can open it. Not you. Them.
+
+Type WAIT."`, 'amber');
+    return;
+  }
+  state.hasNote = true;
+  printLines(
+`You unfold the note. It's short. It just says:
+
+"Ask them something you actually want to know."`, 'amber');
+}
+
+function takeKeycard(){
+  if(!state.drawerOpen){
+    print("There's nothing to take yet. Try OPEN DRAWER.", 'dim');
+    return;
+  }
+  if(state.hasKeycard){
+    print("You already have the keycard.", 'dim');
+    return;
+  }
+  state.hasKeycard = true;
+  printLines(
+`You take the keycard. It's blank. No chip, no stripe,
+nothing a reader could ever read.
+
+It was never going to open the door. You already knew
+that, somewhere.`);
+}
+
+function inventory(){
+  const items = [];
+  if(state.hasKeycard) items.push('a blank keycard');
+  if(state.hasNote) items.push('a folded note');
+  if(items.length === 0){
+    print("You're carrying nothing.", 'dim');
+  } else {
+    print("You are carrying: " + items.join(', ') + '.', 'dim');
+  }
+}
+
+async function goDoor(){
+  if(state.ending) return;
+  if(!state.unlocked){
+    printLines(
+`You try the door. It doesn't move — still sealed.
+Something in this room is keeping it locked.`, 'dim');
+    return;
+  }
+  state.ending = true;
+  await typeLines(
+`You stand and walk to the steel door. There's no handle,
+no card reader, no keypad. Just a door, and a line painted
+across it in something that isn't quite paint:
+
+  THERE'S NO LOCK HERE. THERE NEVER WAS.
+
+  TYPE YOUR NAME.`, null, 12);
+  print('');
+  input.placeholder = 'type your name...';
+}
+
+function unknown(cmdText){
+  print(`I don't understand "${cmdText}".`, 'dim');
+}
+
+const openers = [
+  n => `Hey ${n}.`,
+  n => `So, ${n}.`,
+  n => `${n}. Yeah, you.`,
+  n => `Alright ${n}, listen up.`,
+  n => `Not gonna lie, ${n} —`,
+  n => `Okay ${n}, real quick.`
+];
+
+const middles = [
+  "You made it through the locks, which honestly says more about you than you probably give yourself credit for.",
+  "You're doing better than you think, even on the days it doesn't feel that way.",
+  "I don't say this stuff often, so take it while it's here: I'm glad you're around.",
+  "None of that actually mattered, by the way — the doors, the logs, all of it. This part's the whole point.",
+  "You've got no idea how good it is having you around. Don't let it go to your head.",
+  "Whatever's stressing you out right now, it's smaller than it feels. You've handled worse.",
+  "I don't have some big speech. I just wanted an excuse to tell you you're appreciated.",
+  "This whole thing was just an elaborate way of saying I hope things are good for you lately."
+];
+
+const closers = [
+  "Go be great. I mean that.",
+  "Now go touch grass and live a good life.",
+  "Anyway. Happy life. That's it, that's the whole message.",
+  "Take care of yourself. Actually do it this time.",
+  "That's all. Don't get weird about it.",
+  "Alright, that's enough sincerity for one door. Go on."
+];
+
+function generateMessage(name){
+  const o = openers[Math.floor(Math.random()*openers.length)](name);
+  const m1 = middles[Math.floor(Math.random()*middles.length)];
+  let m2 = middles[Math.floor(Math.random()*middles.length)];
+  while(m2 === m1 && middles.length > 1){
+    m2 = middles[Math.floor(Math.random()*middles.length)];
+  }
+  const c = closers[Math.floor(Math.random()*closers.length)];
+  return `${o} ${m1} ${m2} ${c}`;
+}
+
+async function deliverMessage(name){
+  input.disabled = true;
+  await typeLines(`\nThe door reads your name back to you. Then, letter by letter, it starts to write something of its own.\n`, 'dim', 10);
+  const spinDiv = document.createElement('div');
+  spinDiv.className = 'line dim';
+  screen.appendChild(spinDiv);
+  screen.scrollTop = screen.scrollHeight;
+  let spinFrames2 = ['|','/','-','\\'];
+  let si = 0;
+  const spinTimer = setInterval(()=>{
+    si = (si+1)%spinFrames2.length;
+    spinDiv.textContent = spinFrames2[si];
+  }, 100);
+  await new Promise(r => setTimeout(r, 900 + Math.random()*600));
+  clearInterval(spinTimer);
+  spinDiv.remove();
+  const text = generateMessage(name);
+  const div = document.createElement('div');
+  div.className = 'line amber';
+  screen.appendChild(div);
+  for(let i=0;i<text.length;i++){
+    div.textContent += text[i];
+    screen.scrollTop = screen.scrollHeight;
+    await new Promise(r=>setTimeout(r, 12));
+  }
+  screen.appendChild(document.createElement('div'));
+  print('');
+  print('— end —', 'dim');
+  print('');
+  const linkDiv = document.createElement('div');
+  linkDiv.className = 'line dim';
+  linkDiv.innerHTML = 'one last thing, since you made it this far: <a href="https://freeimage.host/i/nnZ7RFp" target="_blank" rel="noopener" style="color:var(--fg);text-decoration:underline;text-shadow:inherit;">click here</a>';
+  screen.appendChild(linkDiv);
+  screen.scrollTop = screen.scrollHeight;
+}
+
+input.addEventListener('keydown', async (e)=>{
+  if(e.key !== 'Enter') return;
+  const raw = input.value.trim();
+  if(!raw) return;
+  input.value = '';
+  print('> ' + raw, 'cmd');
+
+  if(state.ending){
+    await deliverMessage(raw);
+    return;
+  }
+
+  const cmd = raw.toLowerCase();
+  if(cmd === 'help') help();
+  else if(cmd === 'look') look();
+  else if(cmd === 'open drawer') openDrawer();
+  else if(cmd === 'read note') readNote();
+  else if(cmd === 'take keycard') takeKeycard();
+  else if(cmd === 'read log') readLog();
+  else if(cmd === 'hint') giveHint();
+  else if(cmd.startsWith('enter ')) enterAnswer(cmd.slice(6).trim());
+  else if(cmd === 'inventory' || cmd === 'inv') inventory();
+  else if(cmd === 'go door' || cmd === 'door') await goDoor();
+  else if(cmd === 'wait'){
+    printLines(`You wait. Nothing opens by itself. Try GO DOOR when you're ready.`, 'dim');
+  }
+  else unknown(raw);
+});
+
+document.addEventListener('click', ()=> input.focus());
+</script>
+</body>
+</html>
