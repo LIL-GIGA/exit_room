@@ -114,11 +114,201 @@
     z-index:5;
     text-shadow:0 0 4px rgba(60,242,90,0.5);
   }
+  #lights{
+    position:absolute;inset:0;
+    background:#000;
+    color:var(--fg);
+    z-index:10;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    text-align:center;
+    touch-action:manipulation;
+    user-select:none;
+  }
+  #lightsHeader{
+    font-size:13px;
+    color:var(--dim);
+    letter-spacing:1px;
+    margin-bottom:4px;
+  }
+  #lightsLog{
+    font-size:11px;
+    color:var(--dim);
+    opacity:0.85;
+    max-width:300px;
+    line-height:1.5;
+    margin-bottom:16px;
+    white-space:pre-wrap;
+  }
+  #lightsPreview{
+    width:64px;height:64px;
+    border-radius:50%;
+    border:1px solid var(--dim);
+    margin-bottom:18px;
+    box-shadow:0 0 20px rgba(255,255,255,0.05);
+  }
+  .lightRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+    width:min(260px, 80vw);
+  }
+  .lightLabel{
+    width:16px;
+    font-size:13px;
+    font-weight:bold;
+  }
+  .lightLabel.r{color:#ff5c5c;}
+  .lightLabel.g{color:#5cff7a;}
+  .lightLabel.b{color:#5c9bff;}
+  .lightSlider{
+    flex:1;
+    -webkit-appearance:none;
+    height:6px;
+    border-radius:3px;
+    background:rgba(255,255,255,0.15);
+    outline:none;
+  }
+  .lightSlider::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:20px;height:20px;
+    border-radius:50%;
+    background:var(--fg);
+    cursor:pointer;
+  }
+  .lightVal{
+    width:18px;
+    font-size:12px;
+    color:var(--dim);
+  }
+  #lightsMsg{
+    min-height:20px;
+    font-size:12px;
+    color:var(--dim);
+    margin-top:10px;
+  }
+  #lightsGo{
+    margin-top:14px;
+    padding:10px 22px;
+    border:1px solid var(--dim);
+    background:rgba(60,242,90,0.08);
+    color:var(--fg);
+    font-family:inherit;
+    font-size:13px;
+    border-radius:6px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #lightsGo:active{ background:rgba(60,242,90,0.25); }
+
+  #circuit, #sequence{
+    position:absolute;inset:0;
+    background:#000;
+    color:var(--fg);
+    z-index:10;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    text-align:center;
+    touch-action:manipulation;
+    user-select:none;
+  }
+  #circuitHeader, #sequenceHeader{
+    font-size:13px;
+    color:var(--dim);
+    letter-spacing:1px;
+    margin-bottom:4px;
+  }
+  #circuitSub, #sequenceSub{
+    font-size:11px;
+    color:var(--dim);
+    opacity:0.7;
+    margin-bottom:16px;
+  }
+  #circuitGrid{
+    display:grid;
+    grid-template-columns:repeat(5, 46px);
+    grid-template-rows:repeat(3, 46px);
+    gap:2px;
+  }
+  .circuitTile{
+    width:46px;height:46px;
+    border:1px solid rgba(60,242,90,0.15);
+    border-radius:4px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #circuitMsg{
+    min-height:20px;
+    font-size:12px;
+    color:var(--dim);
+    margin-top:16px;
+  }
+  #seqGrid{
+    display:grid;
+    grid-template-columns:56px 56px 56px;
+    grid-template-rows:56px 56px 56px;
+    gap:7px;
+  }
+  .seqPad{
+    border:1px solid var(--dim);
+    border-radius:8px;
+    background:rgba(60,242,90,0.06);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:background 0.1s;
+  }
+  .seqPad.lit{ background:rgba(60,242,90,0.75); box-shadow:0 0 18px rgba(60,242,90,0.6); }
+  #seqMsg{
+    min-height:20px;
+    font-size:12px;
+    color:var(--dim);
+    margin-top:16px;
+  }
+  #seqRound{
+    font-size:11px;
+    color:var(--dim);
+    margin-bottom:6px;
+  }
 </style>
 </head>
 <body>
 <div id="crt">
-  <div id="boot">INITIALIZING&nbsp;<span id="bootDots"></span></div>
+  <div id="lights">
+    <div id="lightsHeader">SENSOR CALIBRATION — MIX TO WHITE</div>
+    <div id="lightsLog">Red channel is stronger than Blue.
+Green equals Red minus 4.
+All three channels sum to 13.
+Blue reads an odd number.
+No channel reads above 6.</div>
+    <div id="lightsPreview"></div>
+    <div class="lightRow"><span class="lightLabel r">R</span><input class="lightSlider" id="sliderR" type="range" min="1" max="9" value="1"><span class="lightVal" id="valR">1</span></div>
+    <div class="lightRow"><span class="lightLabel g">G</span><input class="lightSlider" id="sliderG" type="range" min="1" max="9" value="1"><span class="lightVal" id="valG">1</span></div>
+    <div class="lightRow"><span class="lightLabel b">B</span><input class="lightSlider" id="sliderB" type="range" min="1" max="9" value="1"><span class="lightVal" id="valB">1</span></div>
+    <button id="lightsGo">CALIBRATE</button>
+    <div id="lightsMsg">&nbsp;</div>
+  </div>
+  <div id="circuit" style="display:none;">
+    <div id="circuitHeader">REROUTE THE LINE — ENTRY TO EXIT</div>
+    <div id="circuitSub">tap a tile to rotate it</div>
+    <div id="circuitLevel" style="font-size:11px;color:var(--dim);margin-bottom:8px;">level 1 of 3</div>
+    <div id="circuitGrid"></div>
+    <div id="circuitMsg">&nbsp;</div>
+  </div>
+  <div id="sequence" style="display:none;">
+    <div id="sequenceHeader">RECALL THE SEQUENCE</div>
+    <div id="sequenceSub">watch it, then repeat it back</div>
+    <div id="seqRound">round 0</div>
+    <div id="seqGrid"></div>
+    <div id="seqMsg">&nbsp;</div>
+  </div>
+  <div id="boot" style="display:none;">INITIALIZING&nbsp;<span id="bootDots"></span></div>
   <div id="screen"></div>
   <div id="inputRow" style="visibility:hidden;">
     <span id="prompt">&gt;</span>
@@ -126,7 +316,9 @@
   </div>
 </div>
 
+
 <script>
+
 const screen = document.getElementById('screen');
 const input = document.getElementById('cmdInput');
 const boot = document.getElementById('boot');
@@ -227,16 +419,19 @@ async function typeLines(lines, cls, delay=14){
 
 let spinFrames = ['|','/','-','\\'];
 let spinIdx = 0;
-const bootTimer = setInterval(()=>{
-  spinIdx = (spinIdx+1)%spinFrames.length;
-  bootDots.textContent = spinFrames[spinIdx];
-}, 100);
+let bootTimer = null;
 
-setTimeout(async ()=>{
-  clearInterval(bootTimer);
-  boot.style.display = 'none';
-  inputRow.style.visibility = 'visible';
-  await typeLines(
+function startBootSequence(){
+  bootTimer = setInterval(()=>{
+    spinIdx = (spinIdx+1)%spinFrames.length;
+    bootDots.textContent = spinFrames[spinIdx];
+  }, 100);
+
+  setTimeout(async ()=>{
+    clearInterval(bootTimer);
+    boot.style.display = 'none';
+    inputRow.style.visibility = 'visible';
+    await typeLines(
 `SYSTEM: WHITEROSE_PROTOCOL
 LOADING ROOM.EXE...
 
@@ -255,8 +450,306 @@ won't move until all three locks are released.
 
 Type HELP if you don't know what to do.
 Type HINT any time if a lock has you stuck.`, null, 10);
-  input.focus();
-}, 1400);
+    input.focus();
+  }, 900);
+}
+
+// ---- Sound module (generated tones, no external files) ----
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ return null; }
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function beep(freq, dur, type, gainVal){
+  const ac = getAudioCtx();
+  if(!ac) return;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  gain.gain.value = gainVal || 0.06;
+  osc.connect(gain);
+  gain.connect(ac.destination);
+  const now = ac.currentTime;
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  osc.start(now);
+  osc.stop(now + dur);
+}
+const sfx = {
+  click: () => beep(320, 0.05, 'square', 0.04),
+  toggle: () => beep(440, 0.06, 'square', 0.05),
+  success: () => { beep(523, 0.12, 'sine', 0.07); setTimeout(()=>beep(784,0.18,'sine',0.07), 110); setTimeout(()=>beep(1047,0.25,'sine',0.08), 220); },
+  error: () => { beep(180, 0.18, 'sawtooth', 0.06); setTimeout(()=>beep(120,0.22,'sawtooth',0.06), 90); },
+  type: () => beep(700, 0.02, 'square', 0.015),
+  unlock: () => { beep(392,0.1,'sine',0.06); setTimeout(()=>beep(523,0.1,'sine',0.06),90); setTimeout(()=>beep(659,0.16,'sine',0.07),180); }
+};
+document.addEventListener('pointerdown', ()=> getAudioCtx(), {once:true});
+document.addEventListener('keydown', ()=> getAudioCtx(), {once:true});
+
+// ---- Light-mixing puzzle (runs before the boot sequence) ----
+const lightsEl = document.getElementById('lights');
+const lightsPreview = document.getElementById('lightsPreview');
+const lightsMsg = document.getElementById('lightsMsg');
+const sliderR = document.getElementById('sliderR');
+const sliderG = document.getElementById('sliderG');
+const sliderB = document.getElementById('sliderB');
+const valR = document.getElementById('valR');
+const valG = document.getElementById('valG');
+const valB = document.getElementById('valB');
+const lightsGo = document.getElementById('lightsGo');
+
+const LIGHT_ANSWER = { r: 6, g: 2, b: 5 };
+
+function updateLightPreview(){
+  const r = Math.round((sliderR.value/9)*255);
+  const g = Math.round((sliderG.value/9)*255);
+  const b = Math.round((sliderB.value/9)*255);
+  lightsPreview.style.background = `rgb(${r},${g},${b})`;
+  lightsPreview.style.boxShadow = `0 0 24px rgba(${r},${g},${b},0.55)`;
+}
+[sliderR, sliderG, sliderB].forEach((s, i)=>{
+  const valEl = [valR, valG, valB][i];
+  s.addEventListener('input', ()=>{
+    valEl.textContent = s.value;
+    sfx.click();
+    updateLightPreview();
+  });
+});
+updateLightPreview();
+
+lightsGo.addEventListener('click', ()=>{
+  const r = parseInt(sliderR.value), g = parseInt(sliderG.value), b = parseInt(sliderB.value);
+  if(r === LIGHT_ANSWER.r && g === LIGHT_ANSWER.g && b === LIGHT_ANSWER.b){
+    sfx.success();
+    lightsMsg.textContent = 'calibrated — pure white.';
+    lightsPreview.style.background = '#fff';
+    lightsPreview.style.boxShadow = '0 0 30px rgba(255,255,255,0.8)';
+    lightsGo.disabled = true;
+    setTimeout(()=>{
+      lightsEl.style.display = 'none';
+      circuitEl.style.display = 'flex';
+      initCircuit();
+    }, 900);
+  } else {
+    sfx.error();
+    lightsMsg.textContent = 'not white yet — recheck the readout.';
+    lightsPreview.style.animation = 'none';
+    void lightsPreview.offsetWidth;
+    lightsPreview.style.boxShadow = '0 0 20px rgba(224,65,60,0.6)';
+    setTimeout(updateLightPreview, 400);
+  }
+});
+
+// ---- Circuit reroute puzzle ----
+const circuitEl = document.getElementById('circuit');
+const circuitGrid = document.getElementById('circuitGrid');
+const circuitMsg = document.getElementById('circuitMsg');
+const circuitLevelEl = document.getElementById('circuitLevel');
+
+// Three levels, increasing tile count. Each verified offline to form
+// one continuous connected path from entry (West) to exit (East).
+const CIRCUIT_LEVELS = [
+  [
+    { row:0, col:0, type:'straight', start:0,   target:90  },
+    { row:0, col:1, type:'elbow',    start:90,  target:180 },
+    { row:1, col:1, type:'elbow',    start:180, target:0   },
+    { row:1, col:2, type:'elbow',    start:0,   target:180 },
+    { row:2, col:2, type:'elbow',    start:180, target:0   }
+  ],
+  [
+    { row:0, col:0, type:'straight', start:180, target:90 },
+    { row:0, col:1, type:'straight', start:270, target:90 },
+    { row:0, col:2, type:'elbow',    start:90,  target:180 },
+    { row:1, col:2, type:'straight', start:90,  target:0   },
+    { row:2, col:2, type:'elbow',    start:180, target:0   },
+    { row:2, col:3, type:'straight', start:0,   target:90 },
+    { row:2, col:4, type:'straight', start:180, target:90 }
+  ],
+  [
+    { row:0, col:0, type:'straight', start:270, target:90  },
+    { row:0, col:1, type:'elbow',    start:270, target:180 },
+    { row:1, col:1, type:'elbow',    start:270, target:0   },
+    { row:1, col:2, type:'straight', start:270, target:90  },
+    { row:1, col:3, type:'elbow',    start:0,   target:270 },
+    { row:0, col:3, type:'elbow',    start:0,   target:90  },
+    { row:0, col:4, type:'elbow',    start:0,   target:180 },
+    { row:1, col:4, type:'straight', start:90,  target:0   },
+    { row:2, col:4, type:'elbow',    start:270, target:0   }
+  ]
+];
+
+let circuitLevelIdx = 0;
+let CIRCUIT_TILES = [];
+
+function circuitConnections(type, rotation){
+  const r = ((rotation % 360) + 360) % 360;
+  if(type === 'straight'){
+    return (r % 180 === 0) ? ['N','S'] : ['E','W'];
+  }
+  const cycle = [['N','E'], ['E','S'], ['S','W'], ['W','N']];
+  return cycle[(r/90) % 4];
+}
+
+function circuitDrawTile(canvas, type, rotation){
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const conns = circuitConnections(type, rotation);
+  const mid = { N:[w/2,0], E:[w,h/2], S:[w/2,h], W:[0,h/2] };
+  const center = [w/2,h/2];
+  ctx.strokeStyle = '#3cf25a';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  conns.forEach(dir=>{
+    ctx.beginPath();
+    ctx.moveTo(center[0], center[1]);
+    ctx.lineTo(mid[dir][0], mid[dir][1]);
+    ctx.stroke();
+  });
+  ctx.fillStyle = '#3cf25a';
+  ctx.beginPath();
+  ctx.arc(center[0], center[1], 4, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function initCircuit(){
+  circuitLevelIdx = 0;
+  loadCircuitLevel();
+}
+
+function loadCircuitLevel(){
+  CIRCUIT_TILES = CIRCUIT_LEVELS[circuitLevelIdx].map(t => ({...t}));
+  circuitLevelEl.textContent = `level ${circuitLevelIdx+1} of ${CIRCUIT_LEVELS.length}`;
+  circuitGrid.innerHTML = '';
+  CIRCUIT_TILES.forEach(t=>{
+    t.rotation = t.start;
+    const canvas = document.createElement('canvas');
+    canvas.width = 46; canvas.height = 46;
+    canvas.className = 'circuitTile';
+    canvas.style.gridRow = t.row+1;
+    canvas.style.gridColumn = t.col+1;
+    canvas.addEventListener('click', ()=>{
+      t.rotation = (t.rotation + 90) % 360;
+      sfx.toggle();
+      circuitDrawTile(canvas, t.type, t.rotation);
+      checkCircuit();
+    });
+    t.canvas = canvas;
+    circuitGrid.appendChild(canvas);
+    circuitDrawTile(canvas, t.type, t.rotation);
+  });
+  circuitMsg.innerHTML = '&nbsp;';
+}
+
+function checkCircuit(){
+  const solved = CIRCUIT_TILES.every(t => t.rotation === t.target);
+  if(solved){
+    circuitLevelIdx++;
+    if(circuitLevelIdx >= CIRCUIT_LEVELS.length){
+      sfx.unlock();
+      circuitMsg.textContent = 'line connected.';
+      setTimeout(()=>{
+        circuitEl.style.display = 'none';
+        sequenceEl.style.display = 'flex';
+        initSequence();
+      }, 700);
+    } else {
+      sfx.success();
+      circuitMsg.textContent = 'connected — next segment.';
+      setTimeout(loadCircuitLevel, 700);
+    }
+  }
+}
+
+// ---- Sequence memory puzzle ----
+const sequenceEl = document.getElementById('sequence');
+const seqGrid = document.getElementById('seqGrid');
+const seqMsg = document.getElementById('seqMsg');
+const seqRoundEl = document.getElementById('seqRound');
+const SEQ_PAD_COUNT = 9;
+const SEQ_TARGET_LENGTH = 8;
+const SEQ_TONES = [261,293,329,349,392,440,493,523,587]; // C major-ish scale across 9 pads
+let seqPads = [];
+let seqSequence = [];
+let seqPlayerIdx = 0;
+let seqAcceptingInput = false;
+
+function initSequence(){
+  seqGrid.innerHTML = '';
+  seqPads = [];
+  for(let i=0;i<SEQ_PAD_COUNT;i++){
+    const pad = document.createElement('div');
+    pad.className = 'seqPad';
+    pad.addEventListener('click', ()=> seqHandleInput(i));
+    seqGrid.appendChild(pad);
+    seqPads.push(pad);
+  }
+  seqSequence = [];
+  seqAddStep();
+}
+
+function seqLight(i, dur){
+  return new Promise(resolve=>{
+    seqPads[i].classList.add('lit');
+    beep(SEQ_TONES[i], (dur||400)/1000, 'sine', 0.06);
+    setTimeout(()=>{
+      seqPads[i].classList.remove('lit');
+      resolve();
+    }, dur || 400);
+  });
+}
+
+async function seqPlayback(){
+  seqAcceptingInput = false;
+  seqMsg.textContent = 'watch...';
+  await new Promise(r=>setTimeout(r, 500));
+  for(const idx of seqSequence){
+    await seqLight(idx, 420);
+    await new Promise(r=>setTimeout(r, 180));
+  }
+  seqMsg.textContent = 'your turn.';
+  seqPlayerIdx = 0;
+  seqAcceptingInput = true;
+}
+
+function seqAddStep(){
+  seqSequence.push(Math.floor(Math.random()*SEQ_PAD_COUNT));
+  seqRoundEl.textContent = `round ${seqSequence.length} of ${SEQ_TARGET_LENGTH}`;
+  seqPlayback();
+}
+
+function seqHandleInput(i){
+  if(!seqAcceptingInput) return;
+  seqLight(i, 220);
+  if(seqSequence[seqPlayerIdx] === i){
+    seqPlayerIdx++;
+    if(seqPlayerIdx === seqSequence.length){
+      seqAcceptingInput = false;
+      if(seqSequence.length >= SEQ_TARGET_LENGTH){
+        sfx.unlock();
+        seqMsg.textContent = 'sequence recalled.';
+        setTimeout(()=>{
+          sequenceEl.style.display = 'none';
+          boot.style.display = 'flex';
+          startBootSequence();
+        }, 700);
+      } else {
+        sfx.success();
+        setTimeout(seqAddStep, 700);
+      }
+    }
+  } else {
+    sfx.error();
+    seqAcceptingInput = false;
+    seqMsg.textContent = 'wrong — watch again.';
+    setTimeout(seqPlayback, 900);
+  }
+}
 
 function help(){
   printLines(
@@ -290,6 +783,7 @@ function enterAnswer(letter){
     state.stage++;
     if(state.stage >= puzzles.length){
       state.unlocked = true;
+      sfx.unlock();
       printLines(
 `Lock ${puzzles.length} of ${puzzles.length} released.
 
@@ -298,11 +792,13 @@ click. The steel door is no longer sealed.
 
 You can GO DOOR now.`, 'amber');
     } else {
+      sfx.success();
       printLines(
 `Lock ${state.stage} of ${puzzles.length} released.
 Type READ LOG to see the next one.`, 'amber');
     }
   } else {
+    sfx.error();
     printLines(
 `Nothing happens. That's not it.
 Type READ LOG to read the current one again.`, 'dim');
@@ -483,6 +979,7 @@ input.addEventListener('keydown', async (e)=>{
   const raw = input.value.trim();
   if(!raw) return;
   input.value = '';
+  sfx.click();
   print('> ' + raw, 'cmd');
 
   if(state.ending){
