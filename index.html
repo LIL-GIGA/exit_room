@@ -331,7 +331,9 @@ let state = {
   drawerOpen: false,
   stage: 0,
   unlocked: false,
-  ending: false
+  ending: false,
+  logReadThisStage: false,
+  hasTypedHelp: false
 };
 
 const puzzles = [
@@ -758,6 +760,7 @@ function seqHandleInput(i){
 }
 
 function help(){
+  state.hasTypedHelp = true;
   printLines(
 `Commands: LOOK, OPEN DRAWER, READ NOTE, TAKE KEYCARD,
 READ LOG, ENTER <letter>, HINT, INVENTORY, GO DOOR, HELP`, 'dim');
@@ -768,12 +771,21 @@ function readLog(){
     print("All three locks are already released. Nothing left to read here.", 'dim');
     return;
   }
+  state.logReadThisStage = true;
   printLines(puzzles[state.stage].text, 'amber');
 }
 
 function giveHint(){
   if(state.unlocked){
     print("All locks are already released — no hints left to give.", 'dim');
+    return;
+  }
+  if(!state.hasTypedHelp){
+    print("You haven't even gotten your bearings yet. Type HELP first.", 'dim');
+    return;
+  }
+  if(!state.logReadThisStage){
+    print("There's nothing to hint at yet — you don't even know what's being asked of you. Look around a bit more.", 'dim');
     return;
   }
   printLines('HINT: ' + puzzles[state.stage].hint, 'dim');
@@ -787,6 +799,7 @@ function enterAnswer(letter){
   const correct = puzzles[state.stage].answer;
   if(letter === correct){
     state.stage++;
+    state.logReadThisStage = false;
     if(state.stage >= puzzles.length){
       state.unlocked = true;
       sfx.unlock();
