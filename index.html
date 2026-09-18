@@ -646,8 +646,14 @@ function loadCircuitLevel(){
   circuitMsg.innerHTML = '&nbsp;';
 }
 
+function circuitTileSolved(t){
+  const current = circuitConnections(t.type, t.rotation).slice().sort().join('');
+  const wanted = circuitConnections(t.type, t.target).slice().sort().join('');
+  return current === wanted;
+}
+
 function checkCircuit(){
-  const solved = CIRCUIT_TILES.every(t => t.rotation === t.target);
+  const solved = CIRCUIT_TILES.every(circuitTileSolved);
   if(solved){
     circuitLevelIdx++;
     if(circuitLevelIdx >= CIRCUIT_LEVELS.length){
@@ -882,65 +888,30 @@ Something in this room is keeping it locked.`, 'dim');
     return;
   }
   state.ending = true;
+  input.disabled = true;
   await typeLines(
 `You stand and walk to the steel door. There's no handle,
 no card reader, no keypad. Just a door, and a line painted
 across it in something that isn't quite paint:
 
-  THERE'S NO LOCK HERE. THERE NEVER WAS.
-
-  TYPE YOUR NAME.`, null, 12);
+  THERE'S NO LOCK HERE. THERE NEVER WAS.`, null, 12);
   print('');
-  input.placeholder = 'type your name...';
+  await deliverMessage();
 }
 
 function unknown(cmdText){
   print(`I don't understand "${cmdText}".`, 'dim');
 }
 
-const openers = [
-  n => `Hey ${n}.`,
-  n => `So, ${n}.`,
-  n => `${n}. Yeah, you.`,
-  n => `Alright ${n}, listen up.`,
-  n => `Not gonna lie, ${n} —`,
-  n => `Okay ${n}, real quick.`
-];
+const FINAL_MESSAGE =
+`You found the last piece.
+I don't say this often, but I'm grateful for the people I've met along the way, including you.
+I know I don't reach out much. It's not because I hate you or don't care. I'm just not very good at keeping in touch. So if I ever seem distant, don't take it personally.
+I genuinely hope you have a long, healthy and happy life.
+Anyway, congratulations. You solved my stupid puzzle.`;
 
-const middles = [
-  "You made it through the locks, which honestly says more about you than you probably give yourself credit for.",
-  "You're doing better than you think, even on the days it doesn't feel that way.",
-  "I don't say this stuff often, so take it while it's here: I'm glad you're around.",
-  "None of that actually mattered, by the way — the doors, the logs, all of it. This part's the whole point.",
-  "You've got no idea how good it is having you around. Don't let it go to your head.",
-  "Whatever's stressing you out right now, it's smaller than it feels. You've handled worse.",
-  "I don't have some big speech. I just wanted an excuse to tell you you're appreciated.",
-  "This whole thing was just an elaborate way of saying I hope things are good for you lately."
-];
-
-const closers = [
-  "Go be great. I mean that.",
-  "Now go touch grass and live a good life.",
-  "Anyway. Happy life. That's it, that's the whole message.",
-  "Take care of yourself. Actually do it this time.",
-  "That's all. Don't get weird about it.",
-  "Alright, that's enough sincerity for one door. Go on."
-];
-
-function generateMessage(name){
-  const o = openers[Math.floor(Math.random()*openers.length)](name);
-  const m1 = middles[Math.floor(Math.random()*middles.length)];
-  let m2 = middles[Math.floor(Math.random()*middles.length)];
-  while(m2 === m1 && middles.length > 1){
-    m2 = middles[Math.floor(Math.random()*middles.length)];
-  }
-  const c = closers[Math.floor(Math.random()*closers.length)];
-  return `${o} ${m1} ${m2} ${c}`;
-}
-
-async function deliverMessage(name){
-  input.disabled = true;
-  await typeLines(`\nThe door reads your name back to you. Then, letter by letter, it starts to write something of its own.\n`, 'dim', 10);
+async function deliverMessage(){
+  await typeLines(`\nThen, letter by letter, it starts to write something of its own.\n`, 'dim', 10);
   const spinDiv = document.createElement('div');
   spinDiv.className = 'line dim';
   screen.appendChild(spinDiv);
@@ -954,12 +925,11 @@ async function deliverMessage(name){
   await new Promise(r => setTimeout(r, 900 + Math.random()*600));
   clearInterval(spinTimer);
   spinDiv.remove();
-  const text = generateMessage(name);
   const div = document.createElement('div');
   div.className = 'line amber';
   screen.appendChild(div);
-  for(let i=0;i<text.length;i++){
-    div.textContent += text[i];
+  for(let i=0;i<FINAL_MESSAGE.length;i++){
+    div.textContent += FINAL_MESSAGE[i];
     screen.scrollTop = screen.scrollHeight;
     await new Promise(r=>setTimeout(r, 12));
   }
@@ -981,11 +951,6 @@ input.addEventListener('keydown', async (e)=>{
   input.value = '';
   sfx.click();
   print('> ' + raw, 'cmd');
-
-  if(state.ending){
-    await deliverMessage(raw);
-    return;
-  }
 
   const cmd = raw.toLowerCase();
   if(cmd === 'help') help();
